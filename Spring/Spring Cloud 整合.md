@@ -10637,23 +10637,155 @@ java -Dserver.port=8090 -jar sentinel-dashboard-1.8.1.jar
 
 #### 固定窗口计数器算法
 
+> 给定**时间窗口**，维护一个**计数器**用于统计访问次数，并实现以下规则：
+>
+> 1. 如果访问次数小于阈值，则允许访问，访问次数+1；
+>
+> 2. 如果访问次数超出阈值，则限制访问，访问次数不增；
+>
+> 3. 如果超过了时间窗口，计数器清零，并重置清零后的首次成功访问时间为当前时间
+>
+> 
+>
+> 使用场景：
+>
+> - 保护后端服务免受大流量冲击，避免服务崩溃；
+> - 对 API 调用进行限制，保证公平使用；
+> - 防止恶意用户对服务进行洪水攻击；
+
+文图示例：
+
 1. 将时间划分为多个窗口，窗口时间跨度称为Interval
 2. 每个窗口维护一个计数器，每有一次请求就将计数器 +1，限流就是设置计数器阈值
-3. 如果计数器超过了限流阈值，则超出阈值的请求都被丢弃
+3. 如果计数器超过了限流阈值，则超出阈值的请求都被丢弃，计数器不增
 
 <img src="https://img2023.cnblogs.com/blog/2421736/202307/2421736-20230714000702120-26075690.png" alt="image-20230714000659139" />
 
-但是有个缺点：时间是不固定的。如0 - 1000ms是QPS(1秒内的请求数)，这样来看没有超过阈值，可是：4500 - 5500ms也是1s啊，这是不是也是QPS啊，像下面这样就超出阈值了，服务不得干爬了
+
+
+但是有个缺点：存在明显的临界问题。时间是不固定的，如0 - 1000ms是QPS(1秒内的请求数)，这样来看没有超过阈值，可是：4500 - 5500ms也是1s啊，这是不是也是QPS啊，像下面这样就超出阈值了，服务不得干爬了
 
 <img src="https://img2023.cnblogs.com/blog/2421736/202307/2421736-20230714001041348-1019713348.png" alt="image-20230714001039504" />
 
+
+
+代码示例：
+
+```java
+public class FixedWindowRateLimiter {
+    
+    // 统计请求数
+    private static int counter = 0;
+    private static long lastAcquireTime = 0L;
+    // 假设固定时间窗口是1000ms
+    private static final long windowUnit = 1000L;
+    // 窗口阀值是10
+    private static final int threshold = 10;
+
+    public synchronized boolean tryAcquire() {
+        // 获取系统当前时间
+        long currentTime = System.currentTimeMillis();
+        // 检查是否在时间窗口内
+        if (currentTime - lastAcquireTime > windowUnit) {
+            // 计数器清零
+            counter = 0;
+            // 开启新的时间窗口
+            lastAcquireTime = currentTime;
+        }
+        
+        // 小于阀值
+        if (counter < threshold) {
+            // 计数器加1
+            counter++;
+            // 获取请求成功
+            return true;
+        }
+        
+        // 超过阀值，无法获取请求
+        return false;
+    }
+}
+```
+
+
+
+
+
 #### 滑动窗口计数器算法
 
-在固定窗口计数器算法的基础上，滑动窗口计数器算法会将一个窗口划分为n个更小的区间，如：
+> 为了解决固定窗口临界问题。在固定窗口计数器算法的基础上，滑动窗口计数器算法会将一个窗口划分为n个更小的子窗口，每个子窗口独立统计，**按子窗口时间滑动**，分别记录每个小周期内接口的访问次数，并且根据时间滑动删除过期的小周期。它可以解决固定窗口临界值的问题。
+>
+> **适用场景**：同固定窗口的场景，且对流量限制要求较高的场景，**需要更好地应对突发流量**
 
-1. 窗口时间跨度Interval为1秒；区间数量 n = 2 ，则每个小区间时间跨度为500ms
-2. 限流阈值依然为3，时间窗口（1秒）内请求超过阈值时，超出的请求被限流
-3. **窗口会根据当前请求所在时间（currentTime）移动，窗口范围是从（currentTime-Interval）之后的第一个时区开始，到currentTime所在时区结束**
+示例：
+
+![image-20240819130417673](C:\Users\zixq\AppData\Roaming\Typora\typora-user-images\image-20240819130417673.png)
+
+
+
+1. 窗口时间跨度Interval为1秒；区间数量 n = 5 ，则每个小区间时间跨度为0.2s
+2. 每过**0.2s**，时间窗口就会往右滑动一格
+3. 每个小周期，都有自己独立的计数器，如果请求是**0.83s**到达的，**0.8~1.0s**对应的计数器就会**加1**
+
+
+
+**解决临界问题说明：**
+
+- 假设我们1s内的限流阀值还是5个请求，0.8~1.0s内（比如0.9s的时候）来了5个请求，落在黄色格子里
+
+- 时间过了1.0s这个点之后，又来5个请求，落在紫色格子里。如果是固定窗口算法，是不会被限流的，但是滑动窗口的话，每过一个小周期，它会右移一个小格。过了1.0s这个点后，会右移一小格，当前的单位时间段是0.2~1.2s，这个区域的请求已经超过限定的5了，已触发限流啦，实际上，紫色格子的请求都被拒绝
+
+
+
+**缺点：**突发流量无法处理（无法应对短时间内的大量请求，但是一旦到达限流后，请求都会直接暴力被拒绝。这样我们会损失一部分请求，这其实对于产品来说，并不太友好），需要合理调整时间窗口大小
+
+
+
+代码示例：
+
+```java
+import java.util.LinkedList;
+import java.util.Queue;
+
+public class SlidingWindowRateLimiter {
+    
+    // 存储请求的时间戳队列
+    private Queue<Long> timestamps;
+    // 窗口大小，即时间窗口内允许的请求数量
+    private int windowSize;
+    // 窗口持续时间，单位：毫秒
+    private long windowDuration;
+
+    public SlidingWindowRateLimiter(int windowSize, long windowDuration) {
+        this.windowSize = windowSize;
+        this.windowDuration = windowDuration;
+        this.timestamps = new LinkedList<>();
+    }
+
+    public synchronized boolean tryAcquire() {
+        // 获取当前时间戳
+        long currentTime = System.currentTimeMillis();
+
+        // 删除超过窗口持续时间的时间戳
+        while (!timestamps.isEmpty() && currentTime - timestamps.peek() > windowDuration) {
+            timestamps.poll();
+        }
+
+        // 判断当前窗口内请求数是否小于窗口大小
+        if (timestamps.size() < windowSize) {
+            // 将当前时间戳加入队列
+            timestamps.offer(currentTime);
+            // 获取请求成功
+            return true;
+        }
+
+        // 超过窗口大小，无法获取请求
+        return false;
+    }
+}
+```
+
+
 
 
 
@@ -10661,13 +10793,23 @@ java -Dserver.port=8090 -jar sentinel-dashboard-1.8.1.jar
 
 #### 令牌桶算法
 
+> **基于（入口）流速来做流控**。
+>
+> **适用场景**：一般用于保护自身的系统，对调用者进行限流，保护自身的系统不被突发的流量打垮。如果自身的系统实际的处理能力强于配置的流量限制时，可以允许一定程度的流量突发，使得实际的处理速率高于配置的速率，充分利用系统资源
+
 1. 以固定的速率生成令牌，存入令牌桶中，如果令牌桶满了以后，不再生成令牌
-2. 请求进入后，必须先尝试从桶中获取令牌，获取到令牌后才可以被处理，否则
+2. 请求进入后，必须先尝试从桶中获取令牌，获取到令牌后才可以被处理
 3. 如果令牌桶中没有令牌，则请求等待或丢弃
 
 <img src="https://img2023.cnblogs.com/blog/2421736/202307/2421736-20230714001831603-54266991.png" alt="限流算法 - 令牌桶算法" />
 
-也有个缺点：
+
+
+**缺点**：
+
+- 对短时请求难以处理：在短时间内有大量请求到来时，可能会导致令牌桶中的令牌被快速消耗完，从而限流。这种情况下，可以考虑使用漏桶算法
+
+还有个缺点：
 
 1. 假如限流阈值是1000个请求
 2. 假设捅中只能放1000个令牌，前一秒内没有请求，但是令牌已经生成了，放入了捅中
@@ -10677,17 +10819,179 @@ java -Dserver.port=8090 -jar sentinel-dashboard-1.8.1.jar
 
 
 
+代码示例：
+
+```java
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
+public class TokenBucketRateLimiter {
+    
+    // 令牌桶容量，即最大允许的请求数量
+    private long capacity;
+    // 令牌产生速率，即每秒产生的令牌数量
+    private long rate;
+    // 当前令牌数量
+    private long tokens;
+    // 调度器
+    private ScheduledExecutorService scheduler;
+
+    public TokenBucketRateLimiter(long capacity, long rate) {
+        this.capacity = capacity;
+        this.rate = rate;
+        this.tokens = capacity;
+        this.scheduler = new ScheduledThreadPoolExecutor(1);
+        // 启动令牌补充任务
+        scheduleRefill();
+    }
+
+    private void scheduleRefill() {
+        scheduler.scheduleAtFixedRate(() -> {
+            synchronized (this) {
+                // 补充令牌，但不超过容量
+                tokens = Math.min(capacity, tokens + rate);
+            }
+        }, 1, 1, TimeUnit.SECONDS); // 每秒产生一次令牌
+    }
+
+    public synchronized boolean tryAcquire() {
+        
+        // 判断令牌数量是否大于0
+        if (tokens > 0) {
+            // 消耗一个令牌
+            tokens--;
+            
+            // 获取请求成功
+            return true;
+        }
+        
+        // 令牌不足，无法获取请求
+        return false;
+    }
+}
+```
+
+
+
+
+
+**工具**：
+
+1. 单机：RateLimiter。[快速入手](https://blog.csdn.net/muriyue6/article/details/130160193)
+
+基于**令牌桶算法**实现的一个多线程限流器，它可以将请求均匀的进行处理，当然他并不是一个分布式限流器，只是对单机进行限流。它可以应用在定时拉取接口数。通过aop、filter、Interceptor 等都可以达到限流效果
+
+示例：
+
+```xml
+<dependency>
+    <groupId>com.google.guava</groupId>
+    <artifactId>guava</artifactId>
+    <version>29.0-jre</version> <!-- 使用最新的稳定版本 -->
+</dependency>
+```
+
+
+
+```java
+import com.google.common.util.concurrent.RateLimiter;
+
+public class RateLimiterDemo {
+    public static void main(String[] args) {
+        // 创建一个每秒允许2个请求的RateLimiter
+        RateLimiter rateLimiter = RateLimiter.create(2.0);
+
+        while (true) {
+            // 请求RateLimiter一个令牌
+            rateLimiter.acquire();
+            // 执行操作
+            doSomeLimitedOperation();
+        }
+    }
+
+    private static void doSomeLimitedOperation() {
+        // 模拟一些操作
+        System.out.println("Operation executed at: " + System.currentTimeMillis());
+    }
+}
+```
+
+
+
+2. 单机或分布式：Sentinel。即本章节内容
+
 
 
 #### 漏桶算法
 
-是对令牌桶算法做了改进：可以理解成请求在桶内排队等待
+> **基于（出口）流速来做流控**。是对令牌桶算法做了改进：可以理解成请求在桶内排队等待。在网络通信中常用于流量整形，可以很好地解决平滑度问题
+>
+> **适用场景**：一般用于保护第三方的系统，比如自身的系统需要调用第三方的接口，为了保护第三方的系统不被自身的调用打垮，便可以通过漏桶算法进行限流，保证自身的流量平稳的打到第三方的接口上
 
 1. 将每个请求视作"水滴"放入"漏桶"进行存储
 2. "漏桶"以固定速率向外"漏"出请求来执行，如果"漏桶"空了则停止"漏水”
 3. 如果"漏桶"满了则多余的"水滴"会被直接丢弃
 
 <img src="https://img2023.cnblogs.com/blog/2421736/202307/2421736-20230714002843437-1907902074.png" alt="限流算法 - 漏铜算法" />
+
+
+
+**缺点：**
+
+- 需要对请求进行缓存，会增加服务器的内存消耗。
+- 对于流量波动比较大的场景，需要较为灵活的参数配置才能达到较好的效果。
+- 但是面对突发流量的时候，漏桶算法还是循规蹈矩地处理请求，这不是我们想看到的啦。流量变突发时，我们肯定希望系统尽量快点处理请求，提升用户体验嘛
+
+
+
+代码示例：
+
+```java
+public class LeakyBucketRateLimiter {
+    
+    // 漏桶容量，即最大允许的请求数量
+    private long capacity;
+    // 漏水速率，即每秒允许通过的请求数量
+    private long rate;
+    // 漏桶当前水量
+    private long water;
+    // 上一次请求通过的时间戳
+    private long lastTime;
+
+    public LeakyBucketRateLimiter(long capacity, long rate) {
+        this.capacity = capacity;
+        this.rate = rate;
+        this.water = 0;
+        this.lastTime = System.currentTimeMillis();
+    }
+
+    public synchronized boolean tryAcquire() {
+        long now = System.currentTimeMillis();
+        long elapsedTime = now - lastTime;
+
+        // 计算漏桶中的水量
+        water = Math.max(0, water - elapsedTime * rate / 1000);
+
+        // 判断漏桶中的水量是否小于容量
+        if (water < capacity) {
+            // 漏桶中的水量加1
+            water++;
+            // 更新上一次请求通过的时间戳
+            lastTime = now;
+            // 获取请求成功
+            return true;
+        }
+
+        // 漏桶已满，无法获取请求
+        return false;
+    }
+}
+```
+
+
+
+
 
 #### 限流算法对比
 

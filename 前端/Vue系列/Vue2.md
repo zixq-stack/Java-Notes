@@ -5558,6 +5558,111 @@ vue-cli安装成功之后，想找它就在 C/user/appdata/roaming/npm/node_modu
 
 
 
+### VSCode设置Vue文件模板
+
+![image-20241021165924409](https://img2023.cnblogs.com/blog/2421736/202410/2421736-20241021165953159-993686082.png)
+
+![image-20241021170051226](https://img2023.cnblogs.com/blog/2421736/202410/2421736-20241021170050609-131398982.png)
+
+
+
+![image-20241021170156982](https://img2023.cnblogs.com/blog/2421736/202410/2421736-20241021170156239-1518228972.png)
+
+
+
+文件内容如下：
+
+> `prefix` 为你要使用的快捷键
+
+```json
+{
+    "vue文件自定义模板": {
+        "prefix": "vue",
+        "body": [
+            "<template>",
+            "  <div class='$1'></div>",
+            "</template>",
+            "",
+            "<script>",
+            "  /* 这里可以导入其他文件（比如：组件，工具js，第三方插件js，json文件，图片文件等等）",
+            "   * 例如：import 组件名称 from '组件路径';",
+			"   */",
+            "",
+            "  export default {",
+            "    // import引入的组件需要注入到对象中才能使用",
+			"",
+            "    components: {},",
+            "    data() {",
+            "      // 这里存放数据",
+            "      return {",
+            "      };",
+            "    },",
+			"",
+            "    // 监听属性 类似于data概念",
+            "    computed: {},",
+            "    // 监控data中的数据变化",
+            "    watch: {},",
+            "    //方法集合",
+            "    methods: {",
+            "    },",
+			"",
+            "    // 生命周期 - 创建完成（可以访问当前this实例）",
+            "    created() {",
+            "    },",
+            "    // 生命周期 - 挂载完成（可以访问DOM元素）",
+            "    mounted() {",
+            "    },",
+			"    // 生命周期 - 创建之前",
+            "    beforeCreate() {},",
+			"    // 生命周期 - 挂载之前",
+            "    beforeMount() {},",
+			"    // 生命周期 - 更新之前",
+            "    beforeUpdate() {},",
+			"    // 生命周期 - 更新之后",
+            "    updated() {},",
+			"    // 生命周期 - 销毁之前",
+            "    beforeDestroy() {},",
+			"    // 生命周期 - 销毁完成",
+            "    destroyed() {},",
+			"    // 如果页面有keep-alive缓存功能，这个函数会触发",
+            "    activated() {}, ",
+            "  }",
+            "</script>",
+			"",
+            "<style scoped>",
+            "  /* @import url(); 引入公共css类 */",
+            "</style>"
+        ],
+        "description": "生成vue模板"
+    },
+    "http-get请求": {
+	"prefix": "httpget",
+	"body": [
+		"this.\\$http({",
+		"url: this.\\$http.adornUrl(''),",
+		"method: 'get',",
+		"params: this.\\$http.adornParams({})",
+		"}).then(({ data }) => {",
+		"})"
+	],
+	"description": "httpGET请求"
+    },
+    "http-post请求": {
+	"prefix": "httppost",
+	"body": [
+		"this.\\$http({",
+		"url: this.\\$http.adornUrl(''),",
+		"method: 'post',",
+		"data: this.\\$http.adornData(data, false)",
+		"}).then(({ data }) => { });" 
+	],
+	"description": "httpPOST请求"
+    }
+}
+```
+
+
+
 ### 认识 ref 属性
 
 > **这个属性是用来给“元素”或“子组件“注册引用信息（也就是id属性的替代者）**，这个小东西很重要，关系到后续组件与组件之间的通信。

@@ -8,7 +8,7 @@
 
 
 
-**Logger**：被称为记录器，应用程序通过获取Logger对象，调研其API来发布日志信息。Logger通常被认为是访问日志系统的入口程序
+**Logger**：被称为记录器，应用程序通过获取Logger对象，调用其API来发布日志信息。Logger通常被认为是访问日志系统的入口程序
 
 **Handler**：处理器，每个Logger都会关联一个或者是一组Handler，Logger会将日志交给关联的Handler去做处理，由Handler负责将日志做记录。Handler具体实现了日志的输出位置，比如可以输出到控制台或者是文件中等等
 
@@ -529,7 +529,7 @@ public void test06() throws Exception {
 
 **3、设置日志级别Level，在打印的过程中使用到了日志记录的LogRecord类，源码找寻如下：**
 
- ```json
+ ```java
 // 1、点击 logger.severe("severe信息"); 中的severe，当然点击其他warning、info、config也是可以进去的，之后会看到如下的代码
         public void severe(String msg) {
             log(Level.SEVERE, msg);
@@ -642,7 +642,7 @@ ERROR
 
 用PatternLayout可以自定义格式输出，是我们最常用的方式，这种格式化输出采用类似于 C 语言的 printf 函数的打印格式格式化日志信息
 
-```json
+```txt
 %m 输出代码中指定的日志信息
 
 %p 输出优先级，及 DEBUG、INFO 等
@@ -1282,7 +1282,7 @@ public void setConversionPattern(String conversionPattern) {
 
 从中发现，需要配置的就是`String conversionPattern`。因此：在`log4j.properties`配置文件中添加上`conversionPattern`属性配置即可，当然：这个属性配置遵循一定的写法，写法如下：
 
-```json
+```txt
 %m 输出代码中指定的日志信息
 %p 输出优先级，及 DEBUG、INFO 等
 %n 换行符（Windows平台的换行符为 "\n"，Unix 平台为 "\n"）
@@ -1913,11 +1913,11 @@ public void test03(){
     /*
         日志对于异常信息的处理
 
-            一般情况下，我们在开发中的异常信息，都是记录在控制台上（我们开发环境的一种日志打印方式）
+            一般情况下，我们在开发中的异常信息，也会记录在控制台上
             我们会根据异常信息提取出有用的线索，来调试BUG
 
             但是在真实生产环境中（项目上线），对于服务器或者是系统相关的问题
-            在控制台上其实也会提供相应的异常或者错误信息的输出
+            在控制台上虽然也会提供相应的异常或者错误信息的输出
             可但是这种错误输出方式（输出的时间，位置，格式...）都是服务器系统默认的
 
             我们可以通过日志技术，选择将异常以日志打印的方式，进行输出查看
@@ -1948,7 +1948,7 @@ public void test03(){
 
 #### [#](#SLF4J与日志绑定) SLF4J与日志绑定
 
-官网中有一张图，官网地址：https://www.slf4j.org
+> 官网中有一张图，官网地址：https://www.slf4j.org
 
 ![image](https://img2023.cnblogs.com/blog/2421736/202304/2421736-20230411030125963-1787098714.png)
 
@@ -2244,7 +2244,7 @@ log4j:WARN See http://logging.apache.org/log4j/1.2/faq.html#noconfig for more in
 
 #### [#](#slf4j日志重构) slf4j日志重构
 
-> 有这么一个情况：项目原本使用的是log4j日志，但是随着技术的迭代，需要使用另外的日志框架，如：slf4j+logback，因此：此时不可能说去该源码，把所有使用log4j的地方都改成slf4j。@紫邪情
+> 有这么一个情况：项目原本使用的是log4j日志，但是随着技术的迭代，需要使用另外的日志框架，如：slf4j+logback，因此：此时不可能说去改源码，把所有使用log4j的地方都改成slf4j。@紫邪情
 
 这种情况，在slf4j官网中就提供了对应的解决方式，就是加个依赖而已，加的东西就叫做桥接器
 
@@ -2287,8 +2287,6 @@ log4j.appender.console.layout=org.apache.lo4j.SimpleLayout
 测试代码
 
 ```java
-package com.zixieqing;
-
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.junit.Test;
@@ -2349,8 +2347,6 @@ import org.junit.Test;
 测试：源代码直接不用动
 
 ````java
-package com.zixieqing;
-
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.junit.Test;
@@ -3230,7 +3226,7 @@ log4j2.xml配置文件
 
 	这个标签中除了xmlns，还可以跟两个属性配置
 		status="级别"		日志框架本身的日志输出级别
-						如：<Configuration xmlns="http://logging.apache.org/log4j/2.0/config" status="DEBUG"/>
+						 如：<Configuration xmlns="http://logging.apache.org/log4j/2.0/config" status="DEBUG"/>
 						一般都不需要配置，因为加了之后，输出信息会多一些其实没多大用的内容
 
         monitorInterval="数值"	自动加载配置文件的间隔时间 如：monitorInterval="5" 就是5秒
@@ -3274,7 +3270,7 @@ log4j2.xml配置文件
                 <OnStartupTriggeringPolicy/>
 
                 <!-- 按照文件的大小进行拆分
-					注：这里虽然限制是10KB，但是真实生成出来的文件一般都是比这数值大1KB
+				    注：这里虽然限制是10KB，但是真实生成出来的文件一般都是比这数值大1KB
 			    -->
                 <SizeBasedTriggeringPolicy size="10KB"/>
 
@@ -3436,7 +3432,7 @@ AsyncAppender应该在它引用的Appender之后配置，默认使用 `java.util
                 <OnStartupTriggeringPolicy/>
 
                 <!-- 按照文件的大小进行拆分
-					注：这里虽然限制是10KB，但是真实生成出来的文件一般都是比这数值大1KB
+				    注：这里虽然限制是10KB，但是真实生成出来的文件一般都是比这数值大1KB
 			   -->
                 <SizeBasedTriggeringPolicy size="10KB"/>
 
@@ -3644,9 +3640,9 @@ public void globalAsync() {
 
 log4j2.xml配置
 
-- **注意点：记得把全局异步的properties内容注释掉，全局异步和混合异步不能同时出现**
-
-
+> **注意点**
+>
+> 记得把全局异步的properties内容注释掉，全局异步和混合异步不能同时出现
 
 下面配置的需求是：`cn.zixieqing`包下的日志输出到文件进行异步操作，而`root logger`日志是同步操作
 
@@ -4080,7 +4076,7 @@ void rollingLOg() {
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
-<!--status	框架本身的日志级别
+<!--status			    框架本身的日志级别
 	monitorInterval		指定热更新间隔 最小值5秒	我IDEA不生效，可能是我版本太低（IDEA 2020.3 老古董）
 -->
 <Configuration status="warn" monitorInterval="5">
@@ -4144,7 +4140,7 @@ void rollingLOg() {
 </properties>
 ```
 
-那么别傻不拉几滴在yml中又配置如下内容（或者要都配置的话，那么保证两个路径一样），不然报N多`ERROR / cause by: not found xxxxxxx `具体报的是什么忘了，也懒得重现事故了，总之貌似是`Failed to load log4j2 configurationerror detected `，具体英文是什么忘了，大概意思就是`检测到log4j2.xml`加载失败
+那么别傻不拉几滴在yml中又配置如下内容（或者要都配置的话，那么保证两个路径一样），不然报N多`ERROR / cause by: not found xxxxxxx `具体报的是什么忘了，也懒得重现事故了，总之貌似是`Failed to load log4j2 configurationerror detected `，具体英文是什么忘了，大概意思就是`检测到log4j2.xml加载失败`
 
 ```yml
 # 日志配置

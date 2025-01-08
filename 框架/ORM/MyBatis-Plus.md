@@ -22,7 +22,7 @@
 <!-- Spring Boot2 -->
 <dependency>
     <groupId>com.baomidou</groupId>
-    <artifactId>mybatis-plus-boot-starter-test</artifactId>
+    <artifactId>mybatis-plus-boot-starter</artifactId>
     <version>3.5.7</version>
 </dependency>
 
@@ -462,7 +462,7 @@ public class UserQuery {
 
 
 
-[#](#LambdaUpdate) LambdaUpdate
+### [#](#LambdaUpdate) LambdaUpdate
 
 根据id修改用户余额，如果扣减后余额为0，则将用户status修改为冻结状态2
 
@@ -752,16 +752,17 @@ Java定义JSON对应的类
 ```java
 @Data
 public class Userlnfo {
-    privateIntegerage;
-    privateString intro;
-    privateString gender;
+    private Integer age;
+    private String intro;
+    private String gender;
 }
 ```
 
 Java实体类
 
 ```java
-@Data@TableName(value="user", autoResultMap = true)	// 操作1
+@Data
+@TableName(value="user", autoResultMap = true)	// 操作1
 public class User{
     private Long id;
     private String username;

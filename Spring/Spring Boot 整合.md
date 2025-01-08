@@ -91,8 +91,9 @@
 
 
 
-
 # jsr303检验之Spring-Validation
+
+> 主要参考自：[@JavaGuide：如何在Spring Boot中做参数检验](https://mp.weixin.qq.com/s?__biz=Mzg2OTA0Njk0OA==&mid=2247485783&idx=1&sn=a407f3b75efa17c643407daa7fb2acd6&chksm=cea2469cf9d5cf8afbcd0a8a1c9cc4294d6805b8e01bee6f76bb2884c5bc15478e91459def49&token=292197051&lang=zh_CN#rd)
 
 jsr303这是数据检验的规范，基于这个的实现方式有好几个，自行百度一下，然后注解含义都是和下面列出来的差不多。
 
@@ -144,6 +145,10 @@ jsr303这是数据检验的规范，基于这个的实现方式有好几个，�
 |                  |                                                     |                                                              |
 |                  | @ScriptAssert(lang =, script =, alias =)            | 允许在验证数据时执行自定义的JavaScript或Groovy脚本。这个注解通常与`@Validated`一起使用 |
 |                  | @URL(protocol =, host =, port =, regexp =, flags =) | 是 `Hibernate Validator` 提供的注解，用于验证字符串是否是有效的URL<br />如果不是有效URL，则验证失败且可能抛出 ConstraintViolationException |
+
+> `@Valid` 和 `@Validated` 更详细的区别去这里：[@陈老老老板：@Valid和@Validated的区别](https://www.jb51.net/article/266419.htm)
+
+
 
 
 
@@ -426,7 +431,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("custom")
-@Validated
+@Validated	// 告诉 Spring 去校验方法参数
 public class CustomValidation {
     @GetMapping("/validation")
     public Result validation(@RequestParam(name = "confirm", required = true)
@@ -4375,8 +4380,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
      * anyRequest          |   匹配所有请求路径
      * access              |   SpringEl表达式结果为true时可以访问
      * anonymous           |   匿名可以访问【未登录可访问，已登录不可访问】
-     * denyAll             |   用户不能访问
-     * fullyAuthenticated  |   用户完全认证可以访问（非remember-me下自动登录）
+     * denyAll             |   无条件拒绝任何形式的访问
+     * fullyAuthenticated  |   只允许已经登录或者通过 remember-me 登录的用户访问
      * hasAnyAuthority     |   如果有参数，参数表示权限，则其中任何一个权限可以访问
      * hasAnyRole          |   如果有参数，参数表示角色，则其中任何一个角色可以访问
      * hasAuthority        |   如果有参数，参数表示权限，则其权限可以访问
@@ -4392,6 +4397,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     }
 }
 ```
+
+> `hasRole` 和 `hasAuthority` 容易搞混，区别去这里：[hasRole和HasAuthority区别](https://mp.weixin.qq.com/s/GTNOa2k9_n_H0w24upClRw)
 
 
 
@@ -4654,6 +4661,8 @@ public class MainController {
     }
 }
 ```
+
+> SpEL表达式不懂的，去这里：[SpEL表达式详解](https://blog.csdn.net/weixin_43888891/article/details/127520555)
 
 使用用户名和密码时：
 
@@ -5076,7 +5085,7 @@ public class AuthorizationFilter extends GenericFilterBean {
 			chain.doFilter(request, response);
 			return;
 		}
-		// /error和异步请求不处理
+		// error和异步请求不处理
 		if (skipDispatch(request)) {
 			chain.doFilter(request, response);
 			return;
@@ -7967,6 +7976,14 @@ Spring Boot项目启动时主要流程是这样的：
 **![image-20240527205039714](https://img2023.cnblogs.com/blog/2421736/202405/2421736-20240527205042705-1650878497.png)**
 
 
+
+
+
+
+
+# Spring Boot常用注解
+
+> [@JavaGuide：Spring Boot常用注解总结](https://javaguide.cn/system-design/framework/spring/spring-common-annotations.html)
 
 
 

@@ -4,8 +4,6 @@
 
 
 
-
-
 # VMware安装Centos7
 
 按照物理机CPU实际情况，选择处理器配置，处理器数量*每个处理器内存数量要小于等于物理机CPU的数量，否则报错
@@ -36,6 +34,10 @@
 
 ## 设置静态IP
 
+> 使用 VirtualBox 安装的CentOS7，改静态IP [去这里](https://www.bilibili.com/video/BV1rT4y137vD/?spm_id_from=333.337.search-card.all.click&vd_source=e4988886491488544ea407864e95dfc1)
+>
+> PS：视频中改 `ifcfg-enp0s8` 文件的 IPADDR 时，该值需要参考VirtualBox开机页 管理->主机网络管理器->网卡（A）->IPv4的值。如该 IPv4 为 192.168.56.1，那么 `ifcfg-enp0s8` 中IPADDR的值 192.168.56.xxxx，该 xx 的值为 0 - 254 以内 即可
+
 **查看自己虚拟机的NAT配置**
 
 ![image](https://img2023.cnblogs.com/blog/2421736/202405/2421736-20240504141832953-773870612.png)
@@ -58,11 +60,39 @@
 ![image](https://img2023.cnblogs.com/blog/2421736/202405/2421736-20240504141832946-1885157463.png)
 
 
-<br/>
+
 
 **进入到Linux中**，执行命令：`vim /etc/sysconfig/network-scripts/ifcfg-ens33`
 
-![image](https://img2023.cnblogs.com/blog/2421736/202405/2421736-20240504141833341-634259513.png)
+> `ens33` 是你的linux的网卡名，使用 `ip addr` 可以先看一下
+
+![](https://img2023.cnblogs.com/blog/2421736/202410/2421736-20241022011657900-1339903159.png)
+
+文件内容编写如下：
+
+```bash
+TYPE="Ethernet"
+PROXY_METHOD="none"
+BROWSER_ONLY="no"
+BOOTPROTO="static"    # 改为 static  即静态  dhcp是动态获取，每次会变
+DEFROUTE="yes"
+IPV4_FAILURE_FATAL="no"
+IPV6INIT="yes"
+IPV6_AUTOCONF="yes"
+IPV6_DEFROUTE="yes"
+IPV6_FAILURE_FATAL="no"
+IPV6_ADDR_GEN_MODE="stable-privacy"
+NAME="ens33"
+UUID="07440d98-afc3-42d6-85e4-bd0603372106"
+DEVICE="ens33"
+ONBOOT="yes"    # 改为yes
+
+# 下面内容就是刚刚让记得几个值
+IPADDR="192.168.72.109"      # PADDR和刚刚记住的要在一个段中，如：100改成255以内即可，建议在100左右，这个值一般不会冲突
+NETMASK="255.255.255.0"
+GATEWAY="192.168.72.2"
+DNS1="114.114.114.114"
+```
 
 
 对照图
@@ -72,16 +102,18 @@
 然后保存
 
 
-<br/>
 
-**重启网络**，执行指令：`systemctl restart network`
 
-然后重启Linux，输入`ip addr`就会发现地址已经变成静态的了，也就可以使用SSH客户端工具输入ip、username、password就可以链接了（如：xshell、windTerm......）
+**重启网络**
+
+```bash
+systemctl restart network`
+```
+
+输入`ip addr`就会发现地址已经变成静态的了，也就可以使用SSH客户端工具输入ip、username、password就可以链接了（如：xshell、windTerm......）
 
 
 ![image](https://img2023.cnblogs.com/blog/2421736/202405/2421736-20240504141833203-1766431696.png)
-
-
 
 
 
@@ -107,6 +139,16 @@
 18. `/var` (Variable，变量)：包含在运行时改变大小的文件，如日志文件
 
 
+
+# CentOS 7和8 停止维护
+
+yum命令已经不可以用了，重新拉取仓库信息即可:
+
+1. https://developer.aliyun.com/mirror/centos?spm=a2c6h.13651102.0.0.3e221b11A9CAEo
+
+2. [解决方式1](https://www.cnblogs.com/maowenqiang/articles/7728685.html)
+
+3. [解决方式2](https://www.cnblogs.com/zengzuo613/p/18292809)
 
 # Git工具安装
 
@@ -1121,8 +1163,35 @@ systemctl restart docker.service
 
 
 
+## 修订：2024年7月份后幺蛾子出了
+
+2024年7月份，很多东西要么停止维护，要么直接整改，如上面安装docker使用阿里云镜像仓库个人版也没什么卵用时，使用 `docker pull` 不顶用时，解决方式直接 [去这里](https://blog.csdn.net/weixin_46028606/article/details/142663559) 体验别人RMB的力量
+
+> 修改后 `docker pull` 还出现拉取不下来的，直接pull指定镜像仓库地址，如 `docker pull daocloud.io/library/redis:latest`
+
+再提供一个Docker国内镜像源：
+
+```bash
+vim /etc/docker/daemon.json 
+
+#-------------------------------
+{
+"registry-mirrors":["https://docker.rainbond.cc"]
+}
+#-------------------------------
+
+# 重新加载配置
+sudo systemctl daemon-reload
+
+# 重启docker
+sudo systemctl restart docker
+```
+
+
 
 ## Docker基本命令
+
+> 在前面配置了docker镜像后，`docker pull`时失败借鉴：[docker pull timeout](https://blog.csdn.net/m0_63289178/article/details/135202951)
 
 Docker仓库地址(即dockerHub)：https://hub.docker.com
 ![](https://img2023.cnblogs.com/blog/2421736/202405/2421736-20240504140629131-1038375760.png)

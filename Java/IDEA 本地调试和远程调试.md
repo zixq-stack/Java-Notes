@@ -372,3 +372,10 @@ Connected to the target VM, address: '10.185.0.192:15555', transport: 'socket'
 
 
 
+
+
+
+
+## 额外小技巧
+
+> [@Guide：IDEA5个调试小技巧](https://mp.weixin.qq.com/s?__biz=Mzg2OTA0Njk0OA==&mid=2247516501&idx=1&sn=a8a99ec40a16b08daf73c14c36bdb768&chksm=cea1ce9ef9d64788e19c494979e37b99a963a83e3f7b4a18764a4d2ea942653500589d005f3b&token=787347680&lang=zh_CN#rd)

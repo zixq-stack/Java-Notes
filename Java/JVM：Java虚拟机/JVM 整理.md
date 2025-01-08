@@ -965,7 +965,7 @@ PS：堆中生成的java.lang.Class对象信息是方法区中生成的InstanceK
 
 ##### 查找类加载器
 
-1. **Arthas关于中类加载器的详细信息的查看方式**。[Arthas之classloader命令官网说明](https://arthas.aliyun.com/doc/classloader.html)
+1. **Arthas中类加载器的详细信息的查看方式**。[Arthas之classloader命令官网说明](https://arthas.aliyun.com/doc/classloader.html)
 
 ```bash
 classloader		# 查看 classloader 的继承树，urls，类加载信息，使用 classloader 去获取资源
@@ -1035,7 +1035,7 @@ public class FindClassLoader {
         // 获取父类加载器  即扩展类加载器
         ClassLoader parentclassLoader = classLoader.getParent();
         System.out.println("parentclassLoader = " + parentclassLoader);
-        // 获取启动类加载器     C语言实现，所以结果为 null	目的：出于安安全考虑，所以不许操作此类加载器
+        // 获取启动类加载器     C语言实现，所以结果为 null	目的：出于安全考虑，所以不许操作此类加载器
         ClassLoader loader = parentclassLoader.getParent();
         System.out.println("loader = " + loader);
 
@@ -6482,11 +6482,11 @@ arthas-tunnel-server-下载的某版本-fatjar.jar $			# 别忘了有个 $	即�
 >
 > MAT 是一种快速且功能丰富的 Java 堆分析器，可帮助你发现内存泄漏并减少内存消耗。MAT在的堆内存分析问题使用极为广泛，需要重点掌握。
 >
-> 可以在[这里](https://www.eclipse.org/mat/)下载， 官方文档可以看[这里](http://help.eclipse.org/latest/index.jsp?topic=/org.eclipse.mat.ui.help/welcome.html)
+> 可以在[这里](https://eclipse.dev/mat/download/previous//)下载， 官方文档可以看[这里](http://help.eclipse.org/latest/index.jsp?topic=/org.eclipse.mat.ui.help/welcome.html)
 >
-> 提示：启动时可能会提示某某版本的JDK不支持，需要某某版本或以上，那安装对应的JDK版本，然后将其bin目录的路径放到path配置中即可，但：建议将此版本配置移到最上面或比其他版本的JDK更靠上。
-
-
+> **提示1**：启动时可能会提示某某版本的JDK不支持，需要某某版本或以上，那安装对应的JDK版本，然后将其bin目录的路径放到path配置中即可，但：建议将此版本配置移到最上面或比其他版本的JDK更靠上
+>
+> **提示2**：JDK8对应的MAT版本是1.11.0
 
 先来了解三个东西：也是MAT的原理
 
