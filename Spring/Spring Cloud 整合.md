@@ -12301,6 +12301,37 @@ protected static Context trueEnter(String name, String origin) {
 
 
 
+# Sleuth+Zipkin：分布式服务链路追踪
+
+> 微服务之间调来调去是家常便饭，这样就需要一个技术用来对服务进行追踪，方便拍错、调优等，本文使用的Sleuth+Zipkin就是这个目的。@紫邪情
+>
+> Sleuth是Spring Cloud分布式链路追踪的解决方案；Zipkin就是一个可视化界面。是 Twitter 开源的分布式跟踪系统，主要用来收集系统的时序数据，从而追踪系统的调用问题
+>
+> Sleuth官网：https://docs.spring.io/spring-cloud-sleuth/docs/2.2.8.RELEASE/reference/html/
+>
+> Zipkin官网：https://zipkin.io/
+
+看下图先理解四个基本概念：下图在上述官网下滑即可看到
+
+1. CS（Client Sent）、CS（Client Received）
+2. SR（Server Received）、SS（Server Sent）
+
+
+
+![Trace Info propagation](https://img2023.cnblogs.com/blog/2421736/202504/2421736-20250419162816684-304714864.png)
+
+对上图：Trace_id、Span_id的解释
+
+![img](https://img2023.cnblogs.com/blog/2421736/202504/2421736-20250419164856911-467515611.png)
+
+1. **Span（跨度）：是一个基本工作单元，即每一次任务调度（或直接说请求）就是一个Span**。Span是一个64位的唯一ID标识，Span中还有其他数据信息，如摘要、时间戳时间（开始和结束的时间戳）、Span_id、进度ID（通常是IP地址）
+2. **Trace（追踪）：一系列Span组成的一个树状结构的调用链路（即可得出Span之间有着父子关系）**。请求一个微服务系统的API接口，这个 API 接口，需要调用多个微服务，调用每个微服务都会产生一个新的 Span，所有由这个请求产生的 Span 组成了这个Trace
+3. **Annotation（标注）：用来及时记录一个事件的**。一些核心注解用来定义一个请求的开始和结束（就是上面要先自行理解的四个基本常识）
+
+- CS（Client Sent）：客户端发送一个请求，该 annotation 描述了 Span 的开始
+- SR（Server Received）：服务端获得请求并准备开始处理它。该 SR 减去 CS 时间戳，就得到此次服务网络传输的时间
+- SS（Server Sent）：该 annotation 表明服务完成请求处理。该 SS 时间戳减去 SR 时间戳，就可以得到服务器请求的时间
+- CS（Client Received）：SPan 结束的标识。客户端成功接收到服务器端的响应。该 CR 时间戳减去 CS 时间戳，就得到整个请求所消耗的时间
 
 
 
@@ -12308,20 +12339,120 @@ protected static Context trueEnter(String name, String origin) {
 
 
 
+## 整合Slueth+Zipkin
+
+Zipkin原理：
+
+![image-20250419175709699](https://img2023.cnblogs.com/blog/2421736/202504/2421736-20250419175711756-572251376.png)
+
+1、依赖
+
+```xml
+<!-- 别忘了前提是要得有 spring-cloud-dependencies 依赖 -->
+<dependencyManagement>
+      <dependencies>
+          <dependency>
+              <groupId>org.springframework.cloud</groupId>
+              <artifactId>spring-cloud-dependencies</artifactId>
+              <version>${release.train.version}</version>
+              <type>pom</type>
+              <scope>import</scope>
+          </dependency>
+      </dependencies>
+</dependencyManagement>
+
+
+<!-- ====服务提供方和服务消费方都得有，不然咋来的上面Annotation中的四个基本概念==== -->
+
+<!-- sleuth依赖 -->
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-sleuth</artifactId>
+</dependency>
+
+
+<!-- zipkin依赖	该依赖已经包含了上面的sleuth依赖 -->
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-zipkin</artifactId>
+</dependency>
+```
+
+2、YAML相关配置：想要采样的相关微服务都要配置
+
+```yaml
+logging:
+  level:
+    org.springframework.cloud.openfeign: debug
+    org.springframework.cloud.sleuth: debug
+
+spring: 
+  application:
+    name: xxxx-service
+
+  zipkin:
+    # zipkin服务地址	看自己是jar包或docker运行的zipkin在哪里
+    base-url: http://localhost:9411
+    sender:
+      # zipkin收集的数据发送到哪里去	值有：web、rabbitmq、kafka
+      type: web
+      # 取消nacos对zipkin的服务发现
+      discovery-client-enabled: false
+
+  sleuth:
+    sampler:
+	  # 抽样率，默认是 0.1(10%)
+      probability: 1.0
+```
+
+3、运行zipkin服务
+
+```bash
+# tar.gz下载地址
+https://github.com/openzipkin/zipkin/tags
+
+# Zipkin官方的Shell下载
+curl -sSL https://zipkin.io/quickstart.sh | bash -s
+
+# jar包下载地址	Maven官方下载
+https://mvnrepository.com/artifact/io.zipkin.java/zipkin
+
+# Docker运行
+docker run -d -p 9411:9411 openzipkin/zipkin
+```
+
+控制台输出样式：
+
+```json
+service1.log:2016-02-26 11:15:47.561  INFO [service1,2485ec27856c56f4,2485ec27856c56f4,true] 68058 --- [nio-8081-exec-1] i.s.c.sleuth.docs.service1.Application   : Hello from service1. Calling 
+```
+
+`[service1,2485ec27856c56f4,2485ec27856c56f4,true]`组成为：`[服务名. trace_id, span_id]`，`True / false`：表示是否将数据输出到其他服务，true则会把信息输出到其他可视化的服务上观察
+
+
+
+4、访问地址
+
+```bash
+http://localhost:9411
+```
+
+![image-20250419181257353](https://img2023.cnblogs.com/blog/2421736/202504/2421736-20250419181259074-1364103383.png)
 
 
 
 
 
+## Zipkin持久化
 
+> Ziplin的链路追踪信息默认保存在内存中的，服务一停就没了，Ziplin支持的持久化方式：
+>
+> - 内存（默认）
+> - MySQL（不适合）
+> - ElasticSearch
+> - Cassandra（现在用得极少）
 
-
-
-
-
-
-
-
+官网使用文档：https://github.com/openzipkin/zipkin#storage-component
 
 
 
@@ -12366,6 +12497,63 @@ Seata是 2019 年 1 月份蚂蚁金服和阿里巴巴共同开源的分布式事
 
 1. AP模式 ——–> 最终一致性：各个分支事务各自执行和提交，允许出现短暂的结果不一致，采用弥补措施将数据进行同步，从而恢复数据，达到最终数据一致
 2. CP模式 ——–> 强一致性：各个分支事务执行后互相等待，同时提交或回滚，达成数据的强一致性
+
+
+
+
+
+## 分布式事务的几种方案
+
+### 2PC
+
+> 2PC：指的就是二阶段提交（2 phase commit 二阶提交），又叫 XA Transactions
+>
+> MySQL从5.5版本开始支持，SQL Server 2005开始支持，Oracle7开始支持
+
+XA是一个两阶段提交协议，该协议分为以下两个阶段：
+
+1. 事务协调器要求每个涉及到事务的数据库预提交（precommit）此操作，并反映是否可以提交
+2. 事务协调器要求每个数据库提交数据
+
+其中，如果有任何一个数据库否决此次提交，那么所有数据库都会被要求回滚它们在此事务中的那部分信息
+
+![image-20250401201000348](https://img2023.cnblogs.com/blog/2421736/202504/2421736-20250401201036139-1951638797.png)
+
+
+
+优点：XA协议比较简单，一旦商业数据库实现了XA协议，使用分布式事务的成本比较低
+
+缺点：
+
+1. XA性能不理想。XA无法满足高并发场景
+2. XA目前在商业数据库支持的比较理想，在MySQL数据库中支持的不太理想，MySQL的xA实现，没有记录prepare阶段日志，主备切换回导致主库与备库数据不一致
+3. 许多 NOSQL也没有支持xA，这让 xA的应用场景变得非常狭隘
+
+
+
+### 柔性事务：TCC事务补偿型方案
+
+> 刚性事务：遵循ACID原则，强一致性
+>
+> 柔性事务：遵循BASE理论，最终一致性
+>
+> 与刚性事务不同，柔性事务允许一定时间内，不同节点的数据不一致，但要求最终一致
+>
+> **TCC模式：是指支持把自定义的分支事务纳入到全局事务的管理中**
+
+基于XA，变成如下逻辑：可以直接看下面的内容 [Seata之TCC模式：最终一致性](#Seata之TCC模式：最终一致性)
+
+<img src="https://img2023.cnblogs.com/blog/2421736/202307/2421736-20230707133410708-343026245.png" alt="image-20230707133410426" />
+
+
+
+
+
+### 柔性事务：最大努力通知方案
+
+### 柔性事务：可靠消息+最终一致性方案
+
+![image-20250401211827159](https://img2023.cnblogs.com/blog/2421736/202504/2421736-20250401211828835-1059144335.png)
 
 
 
@@ -13202,7 +13390,9 @@ Saga 是一种补偿协议，Saga 正向服务与补偿服务也需要业务开�
 
 
 
+> 在企业级开发中，追求高并发时，Seata一般会配合MQ使用
 
+![Seata结合MQ逻辑示例图](https://img2023.cnblogs.com/blog/2421736/202504/2421736-20250404113147637-327467188.png)
 
 
 

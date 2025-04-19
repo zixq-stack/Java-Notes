@@ -2079,7 +2079,7 @@ CorrelationData correlationData = new CorrelationData();
 correlationData.setId(dataId);
 
 // 在新版中correlationData具有getFuture，可获取结果，而不用在rabbitTemplate上使用ConfirmCallback
-correlationData.getFuture().addCallback( // 对照Ajax
+correlationData.getFuture().addCallback(
     // 成功：收到MQ发的回执
     result -> {
         // 成功发送到exchange

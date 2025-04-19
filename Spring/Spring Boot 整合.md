@@ -2386,18 +2386,17 @@ public interface IUserMapper extends BaseMapper<User> {
 
 
 
-
-
 # 进程本地缓存技术：Ehcache
 
-进程本地缓存：最典型的情况 项目中整一个全局map
-
-还有一种比较流行的是`Caffeine`这个东西要更简单、更好一点
-
-Caffeine官网GitHub地址：https://github.com/ben-manes/caffeine
-Caffeine快速入手网址：http://www.mydlq.club/article/56/
-
-- 这个网址中的第二种集成方式和下面玩的Ehcache注解的含义一样，而且不需要借助xml文件，而ehcache需要借助xml文件
+> 进程本地缓存：最典型的情况 项目中整一个全局map
+>
+> 还有一种比较流行的是`Caffeine`这个东西要更简单、更好一点
+>
+> Caffeine官网GitHub地址：https://github.com/ben-manes/caffeine
+>
+> Caffeine快速入手网址：http://www.mydlq.club/article/56/
+>
+> - 这个网址中的第二种集成方式和下面玩的Ehcache注解的含义一样，而且不需要借助xml文件，而ehcache需要借助xml文件
 
 
 
@@ -2433,49 +2432,17 @@ public class UserService{
 User selectUserById(Integer userId);
 ```
 
-
-
 `@Cacheable` 注解的属性：
 
-- `value`、`cacheNames`
-  - 这两个参数其实是等同的(acheNames为Spring 4新增的，作为value的别名)
-  - 这两个属性的作用：用于指定缓存存储的集合名
-
-
-
-
-- `key` 作用：缓存对象存储在Map集合中的key值
-
-
-
-
-- `condition`  作用：缓存对象的条件。 即：只有满足这里面配置的表达式条件的内容才会被缓存，如：`@Cache(key = "#userId",condition="#userId.length() < 3")` 这个表达式表示只有当userId长度小于3的时候才会被缓存
-
-
-
-
-- `unless` 作用：另外一个缓存条件。 它不同于condition参数的地方在于此属性的判断时机（此注解中编写的条件是在函数被`调用之后`才做判断，所以：这个属性可以通过封装的result进行判断）
-
-
-
-
-- **`keyGenerator`**
-  - 作用：用于指定key生成器。 若需要绑定一个自定义的key生成器，我们需要去实现`org.springframewart.cahce.intercceptor.KeyGenerator`接口，并使用该参数来绑定
-  - 注意点：该参数与上面的key属性是互斥的
-
-
-
-
-- `cacheManager` 作用：指定使用哪个缓存管理器。 也就是当有多个缓存器时才需要使用
-
-
-
-
-- **`cacheResolver`**
-  - 作用：指定使用哪个缓存解析器
-  - 需要通过`org.springframewaork.cache.interceptor.CacheResolver`接口来实现自己的缓存解析器
-
-
+| 属性                  | 作用                                                         | 说明                                                         |
+| --------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| `value`、`cacheNames` | 用于指定缓存存储的集合名<br />相当于分区，相当于磁盘中建不同的文件夹 | 这两个参数其实是等同的<br />`CacheNames`为Spring 4新增的，作为`value`的别名 |
+| `key`                 | 缓存对象存储在Map集合中的key值                               |                                                              |
+| `condition`           | 缓存对象的条件                                               | 只有满足这里面【配置的表达式条件，即[SpEL表达式](https://docs.spring.io/spring-framework/reference/core/expressions.html)】的内容才会被缓存，<br />如：`@Cache(key = "#userId",condition="#userId.length() < 3")` <br />这个表达式表示只有当userId长度小于3的时候才会被缓存 |
+| `unless`              | 缓存条件                                                     | 不同于`condition`参数的地方在于此属性的判断时机，<br />此注解中编写的条件是在函数被`调用之后`才做判断，<br />所以：这个属性可以通过封装的result进行判断 |
+| **`keyGenerator`**    | 用于指定key生成器。 若需要绑定一个自定义的key生成器，我们需要去实现`org.springframewart.cahce.intercceptor.KeyGenerator`接口，并使用该参数来绑定 | 该参数与上面的`key`属性是互斥的                              |
+| `cacheManager`        | 指定使用哪个缓存管理器                                       |                                                              |
+| **`cacheResolver`**   | 指定使用哪个缓存解析器                                       | 需要通过`org.springframewaork.cache.interceptor.CacheResolver`<br />接口来实现自己的缓存解析器 |
 
 
 
@@ -2641,9 +2608,7 @@ public class Starter {
 
 ### 在项目中使用Ehcache
 
-使用常用的`@Cacheable`注解举例
-
-
+> 使用常用的`@Cacheable`注解举例
 
 1. 查询条件是单个时（service实现类中直接开注解）
 
@@ -2668,6 +2633,337 @@ public User queryUserByUsername(UserDAO userDAO) {
 	return userMapper.selectUserByUserDAO(userDAO);
 }
 ```
+
+
+
+
+
+# 集成Spring Cache + Redis
+
+> Spring Cache官网：https://docs.spring.io/spring-framework/reference/integration/cache/annotations.html
+>
+> Redis缓存数据库教程去这里：https://www.cnblogs.com/zixq/p/17808492.html
+
+Spring Cache可以集成很多种缓存，如前面的Ehcache集成就是Spring Cache + Ehcache，本质是：CacheManager ——> Cache
+
+1、依赖
+
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-data-redis</artifactId>
+</dependency>
+
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-cache</artifactId>
+</dependency>
+```
+
+2、YAML配置
+
+```yaml
+spring:
+  redis:
+    host: 127.0.0.1
+    port: 6379
+  #    password:
+
+  cache:
+    # 使用哪种缓存
+    type: redis
+    # 下面这些也可以直接全部在自定义配置中进行配置
+    redis:
+      # 是否使用key前缀 默认true
+      use-key-prefix: true
+      # 自定义key前缀  目的：和自己使用Redis时存的内容进行区分
+      key-prefix: CACHE_
+      # 放入Redis数据的TTL时间 单位 毫秒
+      time-to-live: 300000
+      # 是否存储空值  解决缓存穿透问题  默认 true
+      cache-null-values: true
+```
+
+3、自定义配置：如配置key的序列化方式（默认String类型）、Value的序列化方式（默认JDK序列化）等等
+
+```java
+import org.springframework.boot.autoconfigure.cache.CacheProperties;
+import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.RedisSerializationContext;
+
+/**
+ * <p>
+ * Spring Cache + Redis自定义配置
+ * </p>
+ *
+ * <p>@author : ZiXieqing</p>
+ */
+
+@Configuration
+@EnableCaching	// 开启缓存功能
+public class CacheConfig {
+
+    @Bean
+    public org.springframework.data.redis.cache.RedisCacheConfiguration redisCacheConfiguration(CacheProperties cacheProperties) {
+
+        CacheProperties.Redis redisProperties = cacheProperties.getRedis();
+        org.springframework.data.redis.cache.RedisCacheConfiguration config = org.springframework.data.redis.cache.RedisCacheConfiguration
+                .defaultCacheConfig();
+
+        // 指定放入Redis中value的序列化方式
+        config = config.serializeValuesWith(
+                RedisSerializationContext.SerializationPair.fromSerializer(new GenericJackson2JsonRedisSerializer())
+        );
+
+        // 将YAML配置文件中的东西也拿过来	不使用下面这种配置覆盖的话，那么会导致YAML中的配置失效
+        if (redisProperties.getTimeToLive() != null) {
+            config = config.entryTtl(redisProperties.getTimeToLive());
+        }
+        if (redisProperties.getKeyPrefix() != null) {
+            config = config.prefixCacheNameWith(redisProperties.getKeyPrefix());
+        }
+        if (!redisProperties.isCacheNullValues()) {
+            config = config.disableCachingNullValues();
+        }
+        if (!redisProperties.isUseKeyPrefix()) {
+            config = config.disableKeyPrefix();
+        }
+
+        return config;
+    }
+}
+```
+
+4、要使用的注解：含义和前面的EhCache差不多
+
+```java
+@Cacheable: Triggers cache population. 触发缓存添加数据操作	有则返回缓存中数据，无则把方法查询结果放入缓存
+
+@CacheEvict: Triggers cache eviction.触发删除缓存数据操作
+
+@CachePut: Updates the cache without interfering with the method execution.不影响方法执行的更新缓存数据
+
+@Caching: Regroups multiple cache operations to be applied on a method.组合式注解，可根据需要包含上面所有缓存操作
+
+@CacheConfig: Shares some common cache-related settings at class-level.缓存公共配置操作
+```
+
+
+
+## 原理
+
+1、`CacheAutoConfiguration`
+
+```java
+package org.springframework.boot.autoconfigure.cache;
+
+
+@Configuration(proxyBeanMethods = false)
+@ConditionalOnClass(CacheManager.class)
+@ConditionalOnBean(CacheAspectSupport.class)
+@ConditionalOnMissingBean(value = CacheManager.class, name = "cacheResolver")
+@EnableConfigurationProperties(CacheProperties.class)
+@AutoConfigureAfter({ CouchbaseDataAutoConfiguration.class, HazelcastAutoConfiguration.class,
+		HibernateJpaAutoConfiguration.class, RedisAutoConfiguration.class })
+@Import({ CacheConfigurationImportSelector.class, CacheManagerEntityManagerFactoryDependsOnPostProcessor.class })
+public class CacheAutoConfiguration {
+
+	static class CacheConfigurationImportSelector implements ImportSelector {
+
+		@Override
+		public String[] selectImports(AnnotationMetadata importingClassMetadata) {
+			CacheType[] types = CacheType.values();
+			String[] imports = new String[types.length];
+			for (int i = 0; i < types.length; i++) {
+                // 导入缓存类型
+				imports[i] = CacheConfigurations.getConfigurationClass(types[i]);
+			}
+			return imports;
+		}
+
+    }
+}
+```
+
+2、`CacheConfigurations`
+
+```java
+package org.springframework.boot.autoconfigure.cache;
+
+
+final class CacheConfigurations {
+
+	private static final Map<CacheType, Class<?>> MAPPINGS;
+
+    // 初始化各种缓存类型	本文使用的是Redis
+	static {
+		Map<CacheType, Class<?>> mappings = new EnumMap<>(CacheType.class);
+		mappings.put(CacheType.GENERIC, GenericCacheConfiguration.class);
+		mappings.put(CacheType.EHCACHE, EhCacheCacheConfiguration.class);
+		mappings.put(CacheType.HAZELCAST, HazelcastCacheConfiguration.class);
+		mappings.put(CacheType.INFINISPAN, InfinispanCacheConfiguration.class);
+		mappings.put(CacheType.JCACHE, JCacheCacheConfiguration.class);
+		mappings.put(CacheType.COUCHBASE, CouchbaseCacheConfiguration.class);
+        // Redis缓存类型
+		mappings.put(CacheType.REDIS, RedisCacheConfiguration.class);
+		mappings.put(CacheType.CAFFEINE, CaffeineCacheConfiguration.class);
+		mappings.put(CacheType.SIMPLE, SimpleCacheConfiguration.class);
+		mappings.put(CacheType.NONE, NoOpCacheConfiguration.class);
+		MAPPINGS = Collections.unmodifiableMap(mappings);
+	}
+
+
+	static String getConfigurationClass(CacheType cacheType) {
+		Class<?> configurationClass = MAPPINGS.get(cacheType);
+		Assert.state(configurationClass != null, () -> "Unknown cache type " + cacheType);
+		return configurationClass.getName();
+	}
+}
+```
+
+3、`RedisCacheConfiguration`
+
+```java
+/*
+ * Copyright 2012-2020 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.springframework.boot.autoconfigure.cache;
+
+import java.util.LinkedHashSet;
+import java.util.List;
+
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
+import org.springframework.boot.autoconfigure.cache.CacheProperties.Redis;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
+import org.springframework.cache.CacheManager;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ResourceLoader;
+import org.springframework.data.redis.cache.RedisCacheManager;
+import org.springframework.data.redis.cache.RedisCacheManager.RedisCacheManagerBuilder;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.serializer.JdkSerializationRedisSerializer;
+import org.springframework.data.redis.serializer.RedisSerializationContext.SerializationPair;
+
+/**
+ * Redis cache configuration.
+ *
+ * @author Stephane Nicoll
+ * @author Mark Paluch
+ * @author Ryon Day
+ */
+@Configuration(proxyBeanMethods = false)
+@ConditionalOnClass(RedisConnectionFactory.class)
+@AutoConfigureAfter(RedisAutoConfiguration.class)
+@ConditionalOnBean(RedisConnectionFactory.class)
+@ConditionalOnMissingBean(CacheManager.class)
+@Conditional(CacheCondition.class)
+class RedisCacheConfiguration {
+
+	@Bean
+	RedisCacheManager cacheManager(CacheProperties cacheProperties, CacheManagerCustomizers cacheManagerCustomizers,
+			ObjectProvider<org.springframework.data.redis.cache.RedisCacheConfiguration> redisCacheConfiguration,
+			ObjectProvider<RedisCacheManagerBuilderCustomizer> redisCacheManagerBuilderCustomizers,
+			RedisConnectionFactory redisConnectionFactory, ResourceLoader resourceLoader) {
+        
+		RedisCacheManagerBuilder builder = RedisCacheManager.builder(redisConnectionFactory).cacheDefaults(
+				determineConfiguration(cacheProperties, redisCacheConfiguration, resourceLoader.getClassLoader()));
+		List<String> cacheNames = cacheProperties.getCacheNames();
+		if (!cacheNames.isEmpty()) {
+			builder.initialCacheNames(new LinkedHashSet<>(cacheNames));
+		}
+        
+		redisCacheManagerBuilderCustomizers.orderedStream().forEach((customizer) -> customizer.customize(builder));
+        
+		return cacheManagerCustomizers.customize(builder.build());
+	}
+
+	private org.springframework.data.redis.cache.RedisCacheConfiguration determineConfiguration(
+			CacheProperties cacheProperties,
+			ObjectProvider<org.springframework.data.redis.cache.RedisCacheConfiguration> redisCacheConfiguration,
+			ClassLoader classLoader) {
+        
+		return redisCacheConfiguration.getIfAvailable(() -> createConfiguration(cacheProperties, classLoader));
+	}
+
+    /**
+     *	上面自定义配置就是使用这里的内容进行更改的
+     */
+	private org.springframework.data.redis.cache.RedisCacheConfiguration createConfiguration(
+			CacheProperties cacheProperties, ClassLoader classLoader) {
+        
+		Redis redisProperties = cacheProperties.getRedis();
+		org.springframework.data.redis.cache.RedisCacheConfiguration config = org.springframework.data.redis.cache.RedisCacheConfiguration
+				.defaultCacheConfig();
+        
+		config = config.serializeValuesWith(
+				SerializationPair.fromSerializer(new JdkSerializationRedisSerializer(classLoader)));
+        
+		if (redisProperties.getTimeToLive() != null) {
+			config = config.entryTtl(redisProperties.getTimeToLive());
+		}
+		if (redisProperties.getKeyPrefix() != null) {
+			config = config.prefixCacheNameWith(redisProperties.getKeyPrefix());
+		}
+		if (!redisProperties.isCacheNullValues()) {
+			config = config.disableCachingNullValues();
+		}
+		if (!redisProperties.isUseKeyPrefix()) {
+			config = config.disableKeyPrefix();
+		}
+        
+		return config;
+	}
+
+}
+```
+
+
+
+## Spring Cache的一些问题
+
+1）、读模式
+
+- 缓存穿透：查询一个null数据。解决方案：缓存空数据，可通过`spring.cache.redis.cache-null-values=true`
+- 缓存击穿：大量并发进来同时查询一个正好过期的数据。解决方案：加锁 ? 默认是无加锁的;，使用`sync = true`属性来解决击穿问题
+- 缓存雪崩：大量的key同时过期。解决：加随机时间。加上过期时间
+
+
+
+2)、写模式：（缓存与数据库一致）
+
+- 读写加锁
+- 引入Canal，感知到MySQL的更新去更新Redis
+- 读多写多，直接去数据库查询就行
+
+
+
+3）、总结：
+
+- 常规数据：读多写少，即时性，一致性要求不高的数据，完全可以使用Spring-Cache
+- 写模式：只要缓存的数据有过期时间就足够了
+- 特殊数据：特殊设计
 
 
 
