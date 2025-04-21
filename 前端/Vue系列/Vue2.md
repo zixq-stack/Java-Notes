@@ -5057,6 +5057,10 @@ cli全称： command line interface ，即：命令行接口工具，但是：�
 
 > ==前提：保证自己的电脑有nodejs==。
 
+
+
+##### 安装NodeJS
+
 nodejs的配置很简单，[官网](https://nodejs.org/en/download/) 进行下载（版本最好选择大于等于16的，后续学其他东西时方便）、一直next、最后修改环境变量。LTS就是稳定版，而CURRENT就是更新版（新特性就丢在这里面的，可能会出现bug，所以不推荐下载）
 
 > 有个注意点：选择安装目录时，别把nodejs安装到系统C盘了，不然很大可能出现权限不足、无法操作的问题，特别是：如果自己的电脑没升级，还是家庭版的而不是专业版的，这种问题更常见（当然话说回来，事非绝对，有些人就是不会出问题，所以其实可以先安装C盘试一下，遇到了就当碰壁学经验了）。
@@ -5086,7 +5090,11 @@ nodejs的配置很简单，[官网](https://nodejs.org/en/download/) 进行下�
 
 因此：我们需要去改动这两个地方（知道了这两个目录，不用改也可以，后面什么事都可以不做了，对后续的操作没影响的 ，嫌麻烦就可以改）
 
-1. 在安装的nodejs中新建 node_global 和 node_cache 两个文件夹（前为全局配置路径，后为npm缓存路径）。
+
+
+##### 配置NodeJS
+
+1. 在安装的nodejs中新建 `node_global `和 `node_cache` 两个文件夹（前为全局配置路径，后为npm缓存路径）。
 
 
 
@@ -5113,7 +5121,7 @@ D:\install\Nodejs\node_cache
 
 可见成功修改，但是：还需要做最后一步，去改环境变量。
 
-在改环境变量之前，在刚刚新建的 node_global 目录下，再新建一个 node_modules 文件夹
+在改环境变量之前，在刚刚新建的 `node_global `目录下，再新建一个 `node_modules` 文件夹
 
 <img src="https://img2022.cnblogs.com/blog/2421736/202201/2421736-20220124210635877-365488382.png" alt="image" style="zoom:80%;" />
 
@@ -5143,11 +5151,9 @@ npm i -g vue
 
 
 
+##### 报一堆ERROR错误的解决办法
 
-
-> 报一堆ERROR错误的解决办法
-
-此时：做一个操作即可，回到nodejs安装的根目录
+此时：做一个操作即可，回到NodeJS安装的根目录
 
 ![image-20240215102744577](https://img2023.cnblogs.com/blog/2421736/202402/2421736-20240215102715047-195517840.png)
 
@@ -5179,7 +5185,7 @@ npm i -g vue
 
 
 
-> 如果想要把全局配置恢复为初始化配置的话，也很简单，系统C:/users/.npmrc的文件，删了就可以了。
+> 如果想要把全局配置恢复为初始化配置的话，也很简单，系统`C:/users/.npmrc`的文件，删了就可以了。
 
 <img src="https://img2022.cnblogs.com/blog/2421736/202201/2421736-20220125120314537-124024968.png" alt="image" />
 
@@ -5187,13 +5193,13 @@ npm i -g vue
 
 
 
-
+##### 配置npm镜像
 
 配置成功了nodejs之后，就可以使用npm指令了。
 
 但是：npm是国外的，我们拉取东西时就犹如隔了一道墙，很慢。
 
-因此：拉取淘宝的镜像，从而使用cnpm来代替npm指令，拉取淘宝镜像链接：`npm config set registry https://registry.npmmirror.com` 别用  `npm config set registry http://registry.npm.taobao.org` （2022 年 5 月 31 日 停止服务）。
+因此：拉取淘宝的镜像，从而使用cnpm来代替npm指令，拉取淘宝镜像链接：`npm config set registry https://registry.npmmirror.com`。别用  `npm config set registry http://registry.npm.taobao.org` （2022 年 5 月 31 日 停止服务）。
 
 拉取镜像这里开始就一定要保证自己的网络流畅，不然很容易导致一是淘宝镜像拉取失败（看起来成功了，但是一用就报cnpm不是内部命名 ，这种情况要么权限不够，需要管理员身份打开dos窗口；要么cnpm没拉完整），二是后面安装脚手架时，要是网络不好，也很容易出现看起来成功了，但是：一用就发现vue不是内部指令。
 
@@ -5207,14 +5213,14 @@ npm i -g vue
 
 
 
-
+##### 脚手架创建Vue2项目
 
 1. **全局安装vue cli**。指令： `npm install -g @vue/cli`。
 
-- npm 是nodejs的指令 拉取了淘宝镜像之后，就可以使用cnpm代替了 。
-- install 是安装的意思，可以简写为 i。
-- -g 是全局安装。
-- @vue/cli  是安装的东西。
+- `npm` 是nodejs的指令 拉取了淘宝镜像之后，就可以使用cnpm代替了 。
+- `install` 是安装的意思，可以简写为 i。
+- `-g` 是全局安装。
+- `@vue/cli`  是安装的东西。
 
 > 有个注意点：要是有人知道可以使用 `npm install -g vue-cli` 这样安装脚手架的话，可以用，没错的，但是：目前别这么安装。它安装的脚手架是2.x的，用这种方式安装的不能保证vue（目前版本是1 - 3）和vue-cli（目前版本是1 - 4 ）的版本很适合，所以后续使用一些命令时可能会出现版本不足的问题，让把版本升级，而使用`@vue/cli`安装的是最新版本。
 
