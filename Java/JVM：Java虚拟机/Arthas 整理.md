@@ -543,7 +543,7 @@ jad pdai.tech.servlet.TestMyServlet
 
 
 
-### 重要：如何跟踪某个方法的返回值、入参.... ?
+### [#](#如何跟踪某个方法的返回值、入参) 重要：如何跟踪某个方法的返回值、入参.... ?
 
 > 场景：我想看下我新加的方法在线运行的参数和返回值？或者是 在使用trace定位到性能较低的方法之后，使用watch命令监控该方法，获得更为详细的方法信息。
 
@@ -604,7 +604,7 @@ trace pdai.tech.servlet.TestMyServlet testMethod
 
 
 
-### 重要：如何临时更改代码运行?
+### [#](#如何临时更改代码运行)  重要：如何临时更改代码运行?
 
 > 场景：我找到了问题所在，能否线上直接修改测试，而不需要在本地改了代码后，重新打包部署，然后重启观察效果?
 
@@ -685,4 +685,4 @@ profiler stop --format html				以HTML的方式生成火焰图
 
 - https://www.cnblogs.com/muxuanchan/p/10097639.html
 - https://www.cnblogs.com/yougewe/p/10770690.html
-- https://help.aliyun.com/document_detail/112975.html
+- https://help.aliyun.com/document_detail/112975.html~
